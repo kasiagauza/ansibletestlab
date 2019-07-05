@@ -1,0 +1,42 @@
+---
+- hosts: "centos"
+  # serial: 1
+  any_errors_fatal: "true"
+  become: "yes"
+  vars:
+    - python_version: 3.7.3
+
+  tasks:
+  - name: "install necessary tools"
+    yum:
+      name: ['gcc','openssl-devel','bzip2-devel','libffi-devel']
+      state: present
+
+  - name: "download python-3.7"
+    get_url:
+      url: "https://www.python.org/ftp/python/3.7.3/Python-{{ python_version }}.tgz"
+      dest: "/tmp"
+    register: dp
+  
+  - name: "unpack python"
+    unarchive:
+      copy: "no"
+      src: "{{ dp.dest }}"
+      dest: "/tmp/"
+      keep_newer: "yes"
+
+  - name: "configure python"
+    become: "yes"
+    shell: > 
+      "cd /tmp/Python-{{ python_version }} 
+      && ./configure --enable-optimizations 
+      && make 
+      && make altinstall 
+      && (rm /tmp/Python-{{ python_version }}.tgz) || true"
+  
+  - name: "check python version"
+    shell: "python3.7 -V"
+    register: check_version
+  
+  - debug: var=check_version
+...

@@ -1,0 +1,49 @@
+---
+- hosts: "managed"
+  gather_facts: "no"
+  become: "yes"
+
+  tasks:
+  - name: "get port (default is 22)"
+    set_fact:
+      ansible_ssh_port: "{{ hostvars[inventory_hostname]['ansible_ssh_port'] | default('22') }}"
+    retries: 5
+    delay: 5
+    tags:
+    - check_host_key
+
+  - name: "ensure ssh host key is known"
+    delegate_to: "localhost"
+    lineinfile:
+      dest: "{{ lookup('env','HOME') }}/.ssh/known_hosts"
+      create: "yes"
+      state: "present"
+      line: "{{ lookup('pipe', 'ssh-keyscan -tecdsa -p' + ansible_ssh_port + ' ' + inventory_hostname) }}"
+    tags:
+    - check_host_key
+
+  - name: "add ssh authorized key"
+    become: vagrant
+    authorized_key:
+      user: "vagrant"
+      state: "present"
+      key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/ansible.pub') }}"
+    tags:
+    - configuration
+    notify:
+    - restart ssh
+
+  - name: "test ssh connection"
+    shell: "python --version"
+    register: "ps"
+
+  - name: "python versions"
+    debug:
+      var: ps
+
+  handlers:
+  - name: "restart ssh"
+    systemd:
+      name: "sshd"
+      state: "restarted"
+...

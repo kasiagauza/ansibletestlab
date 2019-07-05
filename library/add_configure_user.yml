@@ -1,0 +1,21 @@
+---
+# - hosts: "managed"
+- hosts: "ubuntu"
+  become: "true"
+
+# - name: add and configure local user
+  tasks:
+  - name: add user kasia
+    user:
+      name: "kasia"
+      password: "{{ hostvars['managed_password'] }}"
+      groups: "sudo, sambashare"
+    tags:
+      - add_user
+
+  - name: check login with kasia account
+    remote_user: kasia
+    shell: "python --version"
+    tags:
+      - check_login
+...
