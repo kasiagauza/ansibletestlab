@@ -1,0 +1,17 @@
+---
+# tasks file for npf-folder-structure
+  # Load structure.json from files/ dir
+  - name: Read directory structure file
+    set_fact:
+      dir_structure: "{{ lookup('file','structure.json') }}"
+  
+  # Iterate over structure array items
+  - name: Create NPF folder structure
+    file:
+      mode: 0755
+      # group: kasia
+      # owner: kasia
+      path: "{{ item }}"
+      recurse: yes
+      state: directory
+    with_list: "{{ dir_structure }}"
